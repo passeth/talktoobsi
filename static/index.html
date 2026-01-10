@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Vault 대화</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧠 Vault 대화</h1>
+        <div class="tabs">
+            <button class="tab active" data-tab="chat">💬 대화</button>
+            <button class="tab" data-tab="history">📜 기록</button>
+            <button class="tab" data-tab="notes">📄 노트</button>
+        </div>
+
+        <div id="chatTab" class="tab-content active">
+            <div id="status">대기 중</div>
+            <div class="chat-container" id="chatContainer"></div>
+            <div class="controls">
+                <button id="recordBtn" class="record-btn">🎤 녹음</button>
+                <button id="clearBtn" class="clear-btn">🗑️</button>
+            </div>
+        </div>
+
+        <div id="historyTab" class="tab-content">
+            <div id="historyList" class="history-list"></div>
+        </div>
+
+        <div id="notesTab" class="tab-content">
+            <div id="noteList" class="note-list"></div>
+            <div id="noteContent" class="note-content"></div>
+        </div>
+
+        <audio id="audioPlayer" style="display:none"></audio>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
