@@ -8,8 +8,13 @@ import glob
 from dotenv import load_dotenv
 from openai import OpenAI
 import tempfile
+from google.cloud import texttospeech
 
 load_dotenv()
+
+# Google Cloud TTS 인증
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.expanduser("~/voice-ai-server/google-tts-credentials.json")
+tts_client = texttospeech.TextToSpeechClient()
 
 app = FastAPI()
 client = OpenAI()
@@ -179,15 +184,29 @@ async def get_note(path: str):
     return {"error": "not found"}
 
 async def generate_tts(text: str) -> str:
-    response = client.audio.speech.create(
-        model="tts-1",
-        voice="nova",
-        input=text
+    """Google Cloud TTS로 음성 생성"""
+    synthesis_input = texttospeech.SynthesisInput(text=text)
+    
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="ko-KR",
+        name="ko-KR-Wavenet-A",  # 고품질 한국어 여성 음성
+        ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
     )
+    
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3,
+        speaking_rate=1.1  # 약간 빠르게
+    )
+    
+    response = tts_client.synthesize_speech(
+        input=synthesis_input,
+        voice=voice,
+        audio_config=audio_config
+    )
+    
     audio_path = tempfile.mktemp(suffix=".mp3")
     with open(audio_path, "wb") as f:
-        for chunk in response.iter_bytes():
-            f.write(chunk)
+        f.write(response.audio_content)
     return audio_path
 
 if __name__ == "__main__":
