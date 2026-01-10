@@ -9,6 +9,9 @@ const audioPlayer = document.getElementById('audioPlayer');
 
 let mediaRecorder, audioChunks = [], isRecording = false;
 let lastAudioUrl = null;
+let audioContext, analyser, silenceTimer = null;
+const SILENCE_THRESHOLD = 0.01;
+const SILENCE_DURATION = 3000; // 3초
 
 // iOS 오디오 잠금 해제
 document.addEventListener('touchstart', () => {
@@ -34,6 +37,14 @@ recordBtn.addEventListener('click', async () => {
     if (!isRecording) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            // 음성 감지 설정
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 256;
+
             mediaRecorder = new MediaRecorder(stream);
             audioChunks = [];
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
@@ -43,18 +54,67 @@ recordBtn.addEventListener('click', async () => {
             recordBtn.textContent = '⏹️ 중지';
             recordBtn.classList.add('recording');
             status.textContent = '🔴 녹음 중...';
+
+            // 무음 감지 시작
+            detectSilence();
         } catch (e) {
             status.textContent = '마이크 권한 필요';
         }
     } else {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(t => t.stop());
-        isRecording = false;
-        recordBtn.textContent = '🎤 녹음';
-        recordBtn.classList.remove('recording');
-        status.textContent = '처리 중...';
+        stopRecording();
     }
 });
+
+// 무음 감지
+function detectSilence() {
+    if (!isRecording) return;
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(dataArray);
+
+    const average = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
+
+    if (average < SILENCE_THRESHOLD) {
+        // 무음 상태
+        if (!silenceTimer) {
+            silenceTimer = setTimeout(() => {
+                if (isRecording && audioChunks.length > 0) {
+                    status.textContent = '🔇 무음 감지 - 자동 중지';
+                    stopRecording();
+                }
+            }, SILENCE_DURATION);
+        }
+    } else {
+        // 소리 감지 - 타이머 리셋
+        if (silenceTimer) {
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
+        }
+    }
+
+    if (isRecording) {
+        requestAnimationFrame(detectSilence);
+    }
+}
+
+// 녹음 중지
+function stopRecording() {
+    if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+    }
+    if (audioContext) {
+        audioContext.close();
+    }
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    }
+    isRecording = false;
+    recordBtn.textContent = '🎤 녹음';
+    recordBtn.classList.remove('recording');
+    status.textContent = '처리 중...';
+}
 
 // 음성 전송
 async function sendAudio() {
@@ -105,7 +165,6 @@ async function handleResponse(response) {
             lastAudioUrl = URL.createObjectURL(audioBlob);
             audioPlayer.src = lastAudioUrl;
 
-            // 재생 시도
             try {
                 await audioPlayer.play();
                 addMessage('🔊 재생 중...', 'ai');
@@ -184,7 +243,6 @@ document.getElementById('noteList').addEventListener('click', async e => {
             const data = await res.json();
             const content = data.content || '';
 
-            // YAML frontmatter 파싱
             const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
             let html = '';
 
