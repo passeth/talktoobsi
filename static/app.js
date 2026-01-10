@@ -9,6 +9,8 @@ const audioPlayer = document.getElementById('audioPlayer');
 
 let mediaRecorder, audioChunks = [], isRecording = false;
 let lastAudioUrl = null;
+let lastTranscript = null; // 대화 시작 텍스트 저장
+let isPlaying = false;
 let audioContext, analyser, silenceTimer = null;
 const SILENCE_THRESHOLD = 0.01;
 const SILENCE_DURATION = 3000; // 3초
@@ -139,6 +141,7 @@ async function sendAudio() {
 async function sendText(text) {
     if (!text.trim()) return;
 
+    lastTranscript = text; // 저장
     addMessage(text, 'user');
     status.textContent = '처리 중...';
     textInput.value = '';
@@ -167,7 +170,10 @@ async function handleResponse(response) {
 
             try {
                 await audioPlayer.play();
-                addMessage('🔊 재생 중...', 'ai');
+                isPlaying = true;
+                replayBtn.textContent = '⏹️';
+                const preview = lastTranscript ? lastTranscript.substring(0, 20) + '...' : '';
+                addMessage(`🔊 ${preview}`, 'ai');
             } catch (e) {
                 addMessage('🔇 재생 버튼을 눌러주세요', 'ai');
             }
@@ -192,17 +198,30 @@ textInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendText(textInput.value);
 });
 
-// 다시 듣기
+// 다시 듣기 / 중지 토글
 replayBtn.addEventListener('click', () => {
-    if (lastAudioUrl) {
+    if (!lastAudioUrl) return;
+
+    if (isPlaying) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+        isPlaying = false;
+        replayBtn.textContent = '🔊';
+        status.textContent = '대기 중';
+    } else {
         audioPlayer.src = lastAudioUrl;
         audioPlayer.play();
-        status.textContent = '🔊 재생 중...';
+        isPlaying = true;
+        replayBtn.textContent = '⏹️';
+        const preview = lastTranscript ? lastTranscript.substring(0, 15) + '...' : '재생 중';
+        status.textContent = `🔊 ${preview}`;
     }
 });
 
 // 오디오 재생 끝
 audioPlayer.addEventListener('ended', () => {
+    isPlaying = false;
+    replayBtn.textContent = '🔊';
     status.textContent = '대기 중';
 });
 
