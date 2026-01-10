@@ -21,8 +21,16 @@
         <div id="chatTab" class="tab-content active">
             <div id="status">대기 중</div>
             <div class="chat-container" id="chatContainer"></div>
+
+            <!-- 텍스트 입력 -->
+            <div class="input-row">
+                <input type="text" id="textInput" placeholder="텍스트로 입력..." />
+                <button id="sendBtn" class="send-btn">📤</button>
+            </div>
+
             <div class="controls">
                 <button id="recordBtn" class="record-btn">🎤 녹음</button>
+                <button id="replayBtn" class="replay-btn" disabled>🔊</button>
                 <button id="clearBtn" class="clear-btn">🗑️</button>
             </div>
         </div>

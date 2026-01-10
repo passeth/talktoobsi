@@ -1,10 +1,21 @@
 const recordBtn = document.getElementById('recordBtn');
 const clearBtn = document.getElementById('clearBtn');
+const replayBtn = document.getElementById('replayBtn');
+const sendBtn = document.getElementById('sendBtn');
+const textInput = document.getElementById('textInput');
 const status = document.getElementById('status');
 const chatContainer = document.getElementById('chatContainer');
 const audioPlayer = document.getElementById('audioPlayer');
 
 let mediaRecorder, audioChunks = [], isRecording = false;
+let lastAudioUrl = null;
+
+// iOS 오디오 잠금 해제
+document.addEventListener('touchstart', () => {
+    const audio = new Audio();
+    audio.play().catch(() => { });
+    audioPlayer.play().catch(() => { });
+}, { once: true });
 
 // 탭 전환
 document.querySelectorAll('.tab').forEach(tab => {
@@ -45,10 +56,9 @@ recordBtn.addEventListener('click', async () => {
     }
 });
 
+// 음성 전송
 async function sendAudio() {
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-
-    // FormData로 오디오 파일 전송
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
 
@@ -58,29 +68,84 @@ async function sendAudio() {
             body: formData
         });
 
-        if (response.ok) {
-            const contentType = response.headers.get('content-type');
-
-            if (contentType && contentType.includes('audio')) {
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                audioPlayer.src = audioUrl;
-                audioPlayer.play();
-                addMessage('🔊 재생 중...', 'ai');
-            } else {
-                const data = await response.json();
-                if (data.transcript) addMessage(data.transcript, 'user');
-                if (data.response) addMessage(data.response, 'ai');
-            }
-            status.textContent = '대기 중';
-        } else {
-            status.textContent = '서버 오류';
-        }
+        await handleResponse(response);
     } catch (err) {
         console.error('연결 오류:', err);
         status.textContent = '서버 연결 실패';
     }
 }
+
+// 텍스트 전송
+async function sendText(text) {
+    if (!text.trim()) return;
+
+    addMessage(text, 'user');
+    status.textContent = '처리 중...';
+    textInput.value = '';
+
+    try {
+        const response = await fetch(`/chat?message=${encodeURIComponent(text)}&tts=true`, {
+            method: 'POST'
+        });
+
+        await handleResponse(response);
+    } catch (err) {
+        console.error('연결 오류:', err);
+        status.textContent = '서버 연결 실패';
+    }
+}
+
+// 응답 처리 (공통)
+async function handleResponse(response) {
+    if (response.ok) {
+        const contentType = response.headers.get('content-type');
+
+        if (contentType && contentType.includes('audio')) {
+            const audioBlob = await response.blob();
+            lastAudioUrl = URL.createObjectURL(audioBlob);
+            audioPlayer.src = lastAudioUrl;
+
+            // 재생 시도
+            try {
+                await audioPlayer.play();
+                addMessage('🔊 재생 중...', 'ai');
+            } catch (e) {
+                addMessage('🔇 재생 버튼을 눌러주세요', 'ai');
+            }
+
+            replayBtn.disabled = false;
+        } else {
+            const data = await response.json();
+            if (data.transcript) addMessage(data.transcript, 'user');
+            if (data.response) addMessage(data.response, 'ai');
+        }
+        status.textContent = '대기 중';
+    } else {
+        status.textContent = '서버 오류';
+    }
+}
+
+// 텍스트 전송 버튼
+sendBtn.addEventListener('click', () => sendText(textInput.value));
+
+// 엔터키로 전송
+textInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendText(textInput.value);
+});
+
+// 다시 듣기
+replayBtn.addEventListener('click', () => {
+    if (lastAudioUrl) {
+        audioPlayer.src = lastAudioUrl;
+        audioPlayer.play();
+        status.textContent = '🔊 재생 중...';
+    }
+});
+
+// 오디오 재생 끝
+audioPlayer.addEventListener('ended', () => {
+    status.textContent = '대기 중';
+});
 
 function addMessage(text, type) {
     const div = document.createElement('div');
@@ -90,9 +155,12 @@ function addMessage(text, type) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
+// 대화 초기화
 clearBtn.addEventListener('click', async () => {
     await fetch('/clear', { method: 'POST' });
     chatContainer.innerHTML = '';
+    lastAudioUrl = null;
+    replayBtn.disabled = true;
     status.textContent = '새 대화';
 });
 
@@ -124,7 +192,6 @@ document.getElementById('noteList').addEventListener('click', async e => {
                 const yamlContent = yamlMatch[1];
                 const bodyContent = content.replace(/^---\n[\s\S]*?\n---\n?/, '');
 
-                // YAML을 키-값 쌍으로 파싱
                 const yamlLines = yamlContent.split('\n');
                 let yamlHtml = '<div class="yaml-frontmatter"><div class="yaml-header">📋 Properties</div>';
                 yamlLines.forEach(line => {
