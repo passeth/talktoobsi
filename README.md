@@ -1,35 +1,84 @@
-# 🎙️ Voice AI Companion
+# 🎙️ Talk to Obsi
 
-> **운전 중 음성으로 Obsidian Vault와 대화하기**
+> **운전 중에도, 걸으면서도 — 음성으로 Obsidian과 대화하세요!**
 
-iPhone/Mac에서 음성으로 Obsidian 노트를 검색, 생성, 수정할 수 있는 AI 비서입니다.
+iPhone이나 Mac에서 **말로** Obsidian 노트를 검색하고, 생성하고, 수정할 수 있는 AI 비서예요.
 
-## ✨ 주요 기능
+![Platform](https://img.shields.io/badge/Platform-macOS-blue) ![Python](https://img.shields.io/badge/Python-3.10+-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-- 🎤 **음성 대화**: Whisper STT + OpenAI TTS
-- 🧠 **Claude Code 연동**: Obsidian Vault 내 파일 읽기/쓰기
-- 📜 **대화 기록**: 세션 유지 및 이전 대화 참조
-- 📄 **마크다운 뷰어**: YAML Frontmatter 지원
-- 🌐 **HTTPS 터널**: iOS Safari 마이크 권한 지원
+## ✨ 이런 게 됩니다!
 
-## 📋 사전 준비
+- 🎤 **"오늘 회의 내용 정리해줘"** → 노트 자동 생성
+- 📝 **"지난주에 쓴 일기 찾아줘"** → 검색해서 읽어줌
+- 💡 **"이 아이디어 Daily Notes에 저장해줘"** → 바로 저장
+- 📊 **"내 프로젝트 현황 요약해줘"** → 분석해서 답변
 
-- macOS (24시간 서버로 사용)
-- Python 3.10+
-- [OpenAI API Key](https://platform.openai.com/api-keys)
-- [Claude Code](https://claude.ai) 설치 및 로그인
-- Obsidian Vault
+**손 안 쓰고 Obsidian을 쓸 수 있어요!** 🚗💬
 
-## 🚀 설치 방법
+---
 
-### 1. 저장소 클론
+## 🎯 이런 분께 추천해요
+
+- ✅ 운전 중에 떠오르는 아이디어를 바로 기록하고 싶은 분
+- ✅ 산책하면서 생각을 정리하고 싶은 분
+- ✅ 타이핑 대신 말로 노트하고 싶은 분
+- ✅ Obsidian을 더 자주 쓰고 싶은데 귀찮은 분
+
+---
+
+## 📋 필요한 것들
+
+시작하기 전에 이것들이 필요해요:
+
+| 필수 항목 | 설명 |
+|----------|------|
+| 🖥️ **Mac** | 24시간 서버로 사용 (안 쓰는 맥북도 OK!) |
+| 🔑 **OpenAI API Key** | [여기서 발급](https://platform.openai.com/api-keys) |
+| 🤖 **Claude Code** | [여기서 설치](https://claude.ai/code) (Pro 구독 필요) |
+| 📁 **Obsidian Vault** | 이미 있으시죠? |
+| 📱 **iPhone** | 선택사항 (Mac에서만 써도 돼요) |
+
+---
+
+## 🚀 설치해볼까요?
+
+### Step 1: Mac 준비하기
+
+터미널을 열고 따라하세요! (Spotlight → "터미널" 검색)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/voice-ai-companion.git
-cd voice-ai-companion
+# Homebrew가 없다면 먼저 설치
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-### 2. Python 가상환경 설정
+### Step 2: 필수 앱 설치
+
+```bash
+# Tailscale (외부 접속용)
+brew install --cask tailscale
+
+# Cloudflared (HTTPS 터널)
+brew install cloudflared
+```
+
+Tailscale 앱 실행 → 로그인해주세요!
+
+### Step 3: Claude Code 설치
+
+```bash
+curl -fsSL https://claude.ai/install.sh | sh
+claude login
+```
+
+### Step 4: 프로젝트 다운로드
+
+```bash
+cd ~
+git clone https://github.com/passeth/talktoobsi.git
+cd talktoobsi
+```
+
+### Step 5: Python 설정
 
 ```bash
 python3 -m venv venv
@@ -37,117 +86,100 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. 환경변수 설정
+### Step 6: 환경변수 설정
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-`.env` 파일 수정:
+이렇게 수정하세요:
 ```
-OPENAI_API_KEY=sk-your-api-key-here
-VAULT_PATH=/Users/YOUR_USERNAME/path/to/your/obsidian/vault
+OPENAI_API_KEY=여기에-API-키-붙여넣기
+VAULT_PATH=/Users/내이름/Documents/Obsidian Vault
 ```
 
-### 4. 서버 실행
+> 💡 **Vault 경로 찾기**: Finder에서 Vault 폴더를 터미널로 드래그하면 경로가 나와요!
+
+### Step 7: 서버 시작!
 
 ```bash
 python main.py
 ```
 
-서버가 `http://localhost:8000`에서 시작됩니다.
+`http://localhost:8000` 에서 서버가 시작됐어요! 🎉
 
-### 5. HTTPS 터널 (iOS용)
+---
 
-iOS Safari에서 마이크 권한을 사용하려면 HTTPS가 필요합니다:
+## 📱 iPhone에서 사용하기
+
+### 1. HTTPS 터널 만들기
+
+iOS Safari는 HTTPS에서만 마이크를 허용해요. 새 터미널 탭에서:
 
 ```bash
-brew install cloudflared
 cloudflared tunnel --url http://localhost:8000
 ```
 
-출력되는 `https://xxx.trycloudflare.com` URL로 iPhone에서 접속하세요.
-
-## 📱 사용 방법
-
-### 웹 앱
-1. 브라우저에서 `http://localhost:8000` 또는 HTTPS URL 접속
-2. 💬 대화 탭: 음성으로 대화
-3. 📜 기록 탭: 이전 대화 확인
-4. 📄 노트 탭: Vault 노트 조회
-
-### iPhone 홈 화면에 추가
-1. Safari로 HTTPS URL 접속
-2. 공유 버튼 → "홈 화면에 추가"
-3. 앱처럼 사용!
-
-## 🔧 API 엔드포인트
-
-| 엔드포인트 | 메서드 | 설명 |
-|-----------|--------|------|
-| `/` | GET | 웹 앱 |
-| `/health` | GET | 서버 상태 |
-| `/chat` | POST | 텍스트 대화 |
-| `/voice` | POST | 음성 대화 |
-| `/history` | GET | 대화 기록 |
-| `/notes` | GET | 노트 목록 |
-| `/note` | GET | 노트 내용 |
-| `/clear` | POST | 대화 초기화 |
-
-## 🔄 24시간 서버 운영
-
-### 잠자기 방지
-```bash
-sudo pmset -c sleep 0
-sudo pmset -c disksleep 0
+이런 URL이 나와요:
+```
+https://random-words-here.trycloudflare.com
 ```
 
-### 자동 시작 (LaunchAgent)
-```bash
-cat > ~/Library/LaunchAgents/com.voice-ai.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.voice-ai</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/bin/bash</string>
-        <string>-c</string>
-        <string>cd ~/voice-ai-companion && source venv/bin/activate && python main.py</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-</dict>
-</plist>
-EOF
+### 2. iPhone 설정
 
-launchctl load ~/Library/LaunchAgents/com.voice-ai.plist
-```
+1. **Tailscale 앱** 설치 (App Store)
+2. Mac과 같은 계정으로 로그인
+3. **Safari**에서 위 URL 접속
+4. 마이크 권한 허용!
 
-## 📁 프로젝트 구조
+### 3. 홈화면에 추가 (앱처럼 쓰기)
 
-```
-voice-ai-companion/
-├── main.py              # FastAPI 서버
-├── requirements.txt     # Python 의존성
-├── .env.example         # 환경변수 템플릿
-├── static/
-│   ├── index.html       # PWA 메인 페이지
-│   ├── style.css        # 스타일
-│   ├── app.js           # 클라이언트 로직
-│   └── manifest.json    # PWA 설정
-└── README.md
-```
+1. Safari 하단 **공유 버튼** 탭
+2. **"홈 화면에 추가"** 선택
+3. 이제 앱처럼 쓸 수 있어요! 📲
+
+---
+
+## 💬 사용 방법
+
+### 탭 구성
+
+| 탭 | 기능 |
+|:--:|------|
+| 💬 | 음성으로 대화 |
+| 📜 | 이전 대화 기록 보기 |
+| 📄 | Vault 노트 읽기 |
+
+### 대화 예시
+
+- 🗣️ "안녕, 오늘 뭐 할까?"
+- 🗣️ "어제 회의록 찾아줘"
+- 🗣️ "이 내용 노트로 저장해줘"
+- 🗣️ "내 태스크 목록 보여줘"
+
+---
+
+## 📚 더 알아보기
+
+자세한 내용은 [docs 폴더](./docs/)를 확인하세요:
+
+- 📖 [유지관리 가이드](./docs/maintenance.md) - 서버 관리, 자동 시작 설정
+- 🔧 [트러블슈팅](./docs/troubleshooting.md) - 문제 해결
+- ❓ [FAQ](./docs/faq.md) - 자주 묻는 질문
+
+---
 
 ## 🤝 기여
 
-이슈와 PR을 환영합니다!
+이슈와 PR 환영합니다! 질문도 편하게 올려주세요 😊
 
 ## 📄 라이선스
 
 MIT License
+
+---
+
+**Made with ❤️ for Obsidian lovers**
+
+*"손가락 대신 목소리로, Obsidian과 대화하세요"*
