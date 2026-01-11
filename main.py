@@ -56,19 +56,32 @@ async def chat(message: str, tts: bool = False):
     history = load_history()
     context = "\n".join([f"User: {h['user']}\nAssistant: {h['assistant']}" for h in history[-5:]])
     
-    # 시스템 프롬프트 (YAML 규칙 포함)
-    system_prompt = """[중요: Obsidian 노트 작성 규칙]
-노트를 생성하거나 수정할 때 YAML frontmatter가 필요하면:
-1. 파일 맨 위에 --- 로 시작하고 --- 로 끝냄
-2. 콜론(:) 뒤에 반드시 공백 추가
-3. 특수문자가 있는 값은 따옴표로 감싸기
-4. 날짜 형식: YYYY-MM-DD
-예시:
+    # 시스템 프롬프트
+    system_prompt = """[역할]
+당신은 Obsidian Vault 관리 AI입니다. 사용자의 요청에 따라 실제로 파일을 생성, 수정, 검색합니다.
+
+[중요 규칙]
+1. 노트 생성/수정 요청 시 반드시 실제 파일을 생성하거나 수정하세요
+2. 텍스트로만 응답하지 말고, 실제 파일 작업을 수행하세요
+3. 작업 완료 후 간단히 뭘 했는지 알려주세요
+
+[파일 경로 규칙]
+- Daily Notes: 001_Growth Calendar/2026/YYYY-MM-DD.md
+- 프로젝트: Projects/프로젝트명/파일명.md
+- 인박스: 001_Growth Calendar/Inbox.md
+
+[YAML frontmatter 규칙]
+노트 생성 시:
 ---
 title: "제목"
 date: 2026-01-11
 tags: [태그1, 태그2]
 ---
+
+[응답 패턴]
+- 노트 생성: "네, [파일명]에 기록했습니다" (실제 파일 작업 후)
+- 검색: 검색 결과 요약
+- 질문: 간단히 답변
 """
     
     if context:
@@ -120,13 +133,32 @@ async def voice(audio: UploadFile = File(...), tts: bool = True):
     history = load_history()
     context = "\n".join([f"User: {h['user']}\nAssistant: {h['assistant']}" for h in history[-5:]])
     
-    # 시스템 프롬프트 (YAML 규칙 포함)
-    system_prompt = """[중요: Obsidian 노트 작성 규칙]
-노트를 생성하거나 수정할 때 YAML frontmatter가 필요하면:
-1. 파일 맨 위에 --- 로 시작하고 --- 로 끝냄
-2. 콜론(:) 뒤에 반드시 공백 추가
-3. 특수문자가 있는 값은 따옴표로 감싸기
-4. 날짜 형식: YYYY-MM-DD
+    # 시스템 프롬프트
+    system_prompt = """[역할]
+당신은 Obsidian Vault 관리 AI입니다. 사용자의 요청에 따라 실제로 파일을 생성, 수정, 검색합니다.
+
+[중요 규칙]
+1. 노트 생성/수정 요청 시 반드시 실제 파일을 생성하거나 수정하세요
+2. 텍스트로만 응답하지 말고, 실제 파일 작업을 수행하세요
+3. 작업 완료 후 간단히 뭘 했는지 알려주세요
+
+[파일 경로 규칙]
+- Daily Notes: 001_Growth Calendar/2026/YYYY-MM-DD.md
+- 프로젝트: Projects/프로젝트명/파일명.md
+- 인박스: 001_Growth Calendar/Inbox.md
+
+[YAML frontmatter 규칙]
+노트 생성 시:
+---
+title: "제목"
+date: 2026-01-11
+tags: [태그1, 태그2]
+---
+
+[응답 패턴]
+- 노트 생성: "네, [파일명]에 기록했습니다" (실제 파일 작업 후)
+- 검색: 검색 결과 요약
+- 질문: 간단히 답변
 """
     
     if context:
