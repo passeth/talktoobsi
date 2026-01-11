@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import tempfile
 from google.cloud import texttospeech
+from urllib.parse import quote
 
 load_dotenv()
 
@@ -90,8 +91,8 @@ tags: [태그1, 태그2]
     if tts and response_text:
         tts_text = get_tts_text(response_text)
         audio_path = await generate_tts(tts_text)
-        # 응답 텍스트 미리보기를 헤더에 추가
-        preview = response_text[:50].replace('\n', ' ')
+        # 응답 텍스트 미리보기를 헤더에 추가 (URL 인코딩)
+        preview = quote(response_text[:50].replace('\n', ' '))
         return FileResponse(
             audio_path, 
             media_type="audio/mpeg",
@@ -148,12 +149,13 @@ async def voice(audio: UploadFile = File(...), tts: bool = True):
     if tts and response_text:
         tts_text = get_tts_text(response_text)
         audio_response_path = await generate_tts(tts_text)
-        # 응답 텍스트 미리보기를 헤더에 추가
-        preview = response_text[:50].replace('\n', ' ')
+        # 응답 텍스트 미리보기를 헤더에 추가 (URL 인코딩)
+        preview = quote(response_text[:50].replace('\n', ' '))
+        user_msg = quote(user_message[:30])
         return FileResponse(
             audio_response_path, 
             media_type="audio/mpeg",
-            headers={"X-Response-Preview": preview, "X-User-Message": user_message[:30]}
+            headers={"X-Response-Preview": preview, "X-User-Message": user_msg}
         )
     
     return {"transcript": user_message, "response": response_text}

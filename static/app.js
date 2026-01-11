@@ -164,8 +164,8 @@ async function handleResponse(response) {
         const contentType = response.headers.get('content-type');
 
         if (contentType && contentType.includes('audio')) {
-            // 서버에서 보낸 응답 미리보기 읽기
-            const responsePreview = response.headers.get('X-Response-Preview') || '응답 중...';
+            // 서버에서 보낸 응답 미리보기 읽기 (URL 디코딩)
+            const responsePreview = decodeURIComponent(response.headers.get('X-Response-Preview') || '%EC%9D%91%EB%8B%B5%20%EC%A4%91...');
             const userMessage = response.headers.get('X-User-Message');
 
             const audioBlob = await response.blob();
