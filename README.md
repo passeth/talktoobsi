@@ -62,9 +62,11 @@ iPhone이나 Mac에서 **말로** Obsidian 노트를 검색하고, 생성하고,
 터미널을 열고 따라하세요! (Spotlight → "터미널" 검색)
 
 ```bash
-# Homebrew가 없다면 먼저 설치
+# Homebrew가 없다면 먼저 설치 (이미 있다면 건너뛰기)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
+
+> 💡 `brew --version` 명령어로 설치 여부 확인 가능!
 
 ### Step 2: 필수 앱 설치
 
