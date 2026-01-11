@@ -7,13 +7,44 @@ const status = document.getElementById('status');
 const chatContainer = document.getElementById('chatContainer');
 const audioPlayer = document.getElementById('audioPlayer');
 
+// 모드 버튼
+const modeBrief = document.getElementById('modeBrief');
+const modeFull = document.getElementById('modeFull');
+const modeRaw = document.getElementById('modeRaw');
+
 let mediaRecorder, audioChunks = [], isRecording = false;
 let lastAudioUrl = null;
-let lastTranscript = null; // 대화 시작 텍스트 저장
+let lastTranscript = null;
 let isPlaying = false;
 let audioContext, analyser, silenceTimer = null;
 const SILENCE_THRESHOLD = 0.01;
-const SILENCE_DURATION = 3000; // 3초
+const SILENCE_DURATION = 3000;
+
+// 현재 모드: brief, full, raw
+let currentMode = 'brief';
+
+// 모드 전환
+modeBrief?.addEventListener('click', () => {
+    currentMode = 'brief';
+    updateModeButtons();
+    textInput.placeholder = '텍스트로 입력...';
+});
+modeFull?.addEventListener('click', () => {
+    currentMode = 'full';
+    updateModeButtons();
+    textInput.placeholder = '텍스트로 입력...';
+});
+modeRaw?.addEventListener('click', () => {
+    currentMode = 'raw';
+    updateModeButtons();
+    textInput.placeholder = 'Claude Code 명령어 직접 입력...';
+});
+
+function updateModeButtons() {
+    modeBrief?.classList.toggle('active', currentMode === 'brief');
+    modeFull?.classList.toggle('active', currentMode === 'full');
+    modeRaw?.classList.toggle('active', currentMode === 'raw');
+}
 
 // iOS 오디오 잠금 해제
 document.addEventListener('touchstart', () => {
@@ -169,7 +200,7 @@ async function sendAudio() {
     formData.append('audio', audioBlob, 'recording.webm');
 
     try {
-        const response = await fetch('/voice?tts=true', {
+        const response = await fetch(`/voice?tts=true&mode=${currentMode}`, {
             method: 'POST',
             body: formData
         });
@@ -185,13 +216,13 @@ async function sendAudio() {
 async function sendText(text) {
     if (!text.trim()) return;
 
-    lastTranscript = text; // 저장
+    lastTranscript = text;
     addMessage(text, 'user');
     status.textContent = '처리 중...';
     textInput.value = '';
 
     try {
-        const response = await fetch(`/chat?message=${encodeURIComponent(text)}&tts=true`, {
+        const response = await fetch(`/chat?message=${encodeURIComponent(text)}&tts=true&mode=${currentMode}`, {
             method: 'POST'
         });
 

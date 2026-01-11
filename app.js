@@ -7,13 +7,44 @@ const status = document.getElementById('status');
 const chatContainer = document.getElementById('chatContainer');
 const audioPlayer = document.getElementById('audioPlayer');
 
+// 모드 버튼
+const modeBrief = document.getElementById('modeBrief');
+const modeFull = document.getElementById('modeFull');
+const modeRaw = document.getElementById('modeRaw');
+
 let mediaRecorder, audioChunks = [], isRecording = false;
 let lastAudioUrl = null;
-let lastTranscript = null; // 대화 시작 텍스트 저장
+let lastTranscript = null;
 let isPlaying = false;
 let audioContext, analyser, silenceTimer = null;
 const SILENCE_THRESHOLD = 0.01;
-const SILENCE_DURATION = 3000; // 3초
+const SILENCE_DURATION = 3000;
+
+// 현재 모드: brief, full, raw
+let currentMode = 'brief';
+
+// 모드 전환
+modeBrief?.addEventListener('click', () => {
+    currentMode = 'brief';
+    updateModeButtons();
+    textInput.placeholder = '텍스트로 입력...';
+});
+modeFull?.addEventListener('click', () => {
+    currentMode = 'full';
+    updateModeButtons();
+    textInput.placeholder = '텍스트로 입력...';
+});
+modeRaw?.addEventListener('click', () => {
+    currentMode = 'raw';
+    updateModeButtons();
+    textInput.placeholder = 'Claude Code 명령어 직접 입력...';
+});
+
+function updateModeButtons() {
+    modeBrief?.classList.toggle('active', currentMode === 'brief');
+    modeFull?.classList.toggle('active', currentMode === 'full');
+    modeRaw?.classList.toggle('active', currentMode === 'raw');
+}
 
 // iOS 오디오 잠금 해제
 document.addEventListener('touchstart', () => {
@@ -34,6 +65,32 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+// Web Speech API 설정 (실시간 음성 인식)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let liveTranscript = '';
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                final += event.results[i][0].transcript;
+            } else {
+                interim += event.results[i][0].transcript;
+            }
+        }
+        liveTranscript = final || interim;
+        status.textContent = `🎤 ${liveTranscript}`;
+    };
+}
+
 // 녹음
 recordBtn.addEventListener('click', async () => {
     if (!isRecording) {
@@ -53,9 +110,17 @@ recordBtn.addEventListener('click', async () => {
             mediaRecorder.onstop = sendAudio;
             mediaRecorder.start();
             isRecording = true;
+            liveTranscript = '';
             recordBtn.textContent = '⏹️ 중지';
             recordBtn.classList.add('recording');
             status.textContent = '🔴 녹음 중...';
+
+            // 실시간 음성 인식 시작
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) { }
+            }
 
             // 무음 감지 시작
             detectSilence();
@@ -108,6 +173,16 @@ function stopRecording() {
     if (audioContext) {
         audioContext.close();
     }
+    // 실시간 음성 인식 중지
+    if (recognition) {
+        try {
+            recognition.stop();
+        } catch (e) { }
+    }
+    // 실시간 인식 결과가 있으면 바로 표시
+    if (liveTranscript) {
+        addMessage(liveTranscript, 'user');
+    }
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
         mediaRecorder.stream.getTracks().forEach(t => t.stop());
@@ -125,7 +200,7 @@ async function sendAudio() {
     formData.append('audio', audioBlob, 'recording.webm');
 
     try {
-        const response = await fetch('/voice?tts=true', {
+        const response = await fetch(`/voice?tts=true&mode=${currentMode}`, {
             method: 'POST',
             body: formData
         });
@@ -141,13 +216,13 @@ async function sendAudio() {
 async function sendText(text) {
     if (!text.trim()) return;
 
-    lastTranscript = text; // 저장
+    lastTranscript = text;
     addMessage(text, 'user');
     status.textContent = '처리 중...';
     textInput.value = '';
 
     try {
-        const response = await fetch(`/chat?message=${encodeURIComponent(text)}&tts=true`, {
+        const response = await fetch(`/chat?message=${encodeURIComponent(text)}&tts=true&mode=${currentMode}`, {
             method: 'POST'
         });
 

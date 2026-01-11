@@ -53,12 +53,19 @@ def health():
     return {"status": "ok"}
 
 @app.post("/chat")
-async def chat(message: str, tts: bool = False):
+async def chat(message: str, tts: bool = False, mode: str = "brief"):
     history = load_history()
-    context = "\n".join([f"User: {h['user']}\nAssistant: {h['assistant']}" for h in history[-5:]])
+    context = "\n".join([f"User: {h['user']}\nAssistant: {h['assistant']}" for h in history[-10:]])  # 10개로 확장
     
-    # 시스템 프롬프트
-    system_prompt = """[역할]
+    # raw 모드: 시스템 프롬프트 없이 직접 실행
+    if mode == "raw":
+        if context:
+            full_prompt = f"이전 대화:\n{context}\n\n{message}"
+        else:
+            full_prompt = message
+    else:
+        # 시스템 프롬프트
+        system_prompt = """[역할]
 당신은 Obsidian Vault 관리 AI입니다. 사용자의 요청에 따라 실제로 파일을 생성, 수정, 검색합니다.
 
 [중요 규칙]
@@ -78,21 +85,13 @@ async def chat(message: str, tts: bool = False):
 
 예시:
 [오늘 데일리 노트에 회의 내용을 기록했습니다]
-2026-01-11.md 파일에 회의 내용을 추가했습니다. 추가된 내용은...
-
-[내일 일정은 3개 있습니다]
-1. 오전 10시 - 팀 미팅
-2. 오후 2시 - 클라이언트 콜
-3. 오후 5시 - 보고서 마감
-
-[오늘 날씨는 맑고 추울 예정입니다]
-서울 기준 오늘 최고기온 -3도...
+2026-01-11.md 파일에 회의 내용을 추가했습니다.
 """
-    
-    if context:
-        full_prompt = f"{system_prompt}\n\n이전 대화:\n{context}\n\n새 질문: {message}"
-    else:
-        full_prompt = f"{system_prompt}\n\n{message}"
+        
+        if context:
+            full_prompt = f"{system_prompt}\n\n이전 대화:\n{context}\n\n새 질문: {message}"
+        else:
+            full_prompt = f"{system_prompt}\n\n{message}"
     
     result = subprocess.run(
         ["claude", "--dangerously-skip-permissions", "-p", full_prompt],
@@ -107,7 +106,14 @@ async def chat(message: str, tts: bool = False):
     save_history(history)
     
     if tts and response_text:
-        tts_text = get_tts_text(response_text)
+        # mode에 따라 TTS 텍스트 선택
+        if mode == "full":
+            # 전체 읽기 (500자까지)
+            tts_text = response_text[:500]
+        else:
+            # brief 또는 raw: [브리프] 부분만
+            tts_text = get_tts_text(response_text)
+        
         audio_path = await generate_tts(tts_text)
         
         # 오디오를 base64로 인코딩
@@ -125,7 +131,7 @@ async def chat(message: str, tts: bool = False):
     return {"response": response_text}
 
 @app.post("/voice")
-async def voice(audio: UploadFile = File(...), tts: bool = True):
+async def voice(audio: UploadFile = File(...), tts: bool = True, mode: str = "brief"):
     """음성 → STT → Claude → TTS 응답"""
     audio_path = f"/tmp/{audio.filename}"
     with open(audio_path, "wb") as f:
