@@ -34,6 +34,32 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+// Web Speech API 설정 (실시간 음성 인식)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let liveTranscript = '';
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                final += event.results[i][0].transcript;
+            } else {
+                interim += event.results[i][0].transcript;
+            }
+        }
+        liveTranscript = final || interim;
+        status.textContent = `🎤 ${liveTranscript}`;
+    };
+}
+
 // 녹음
 recordBtn.addEventListener('click', async () => {
     if (!isRecording) {
@@ -53,9 +79,17 @@ recordBtn.addEventListener('click', async () => {
             mediaRecorder.onstop = sendAudio;
             mediaRecorder.start();
             isRecording = true;
+            liveTranscript = '';
             recordBtn.textContent = '⏹️ 중지';
             recordBtn.classList.add('recording');
             status.textContent = '🔴 녹음 중...';
+
+            // 실시간 음성 인식 시작
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) { }
+            }
 
             // 무음 감지 시작
             detectSilence();
@@ -107,6 +141,16 @@ function stopRecording() {
     }
     if (audioContext) {
         audioContext.close();
+    }
+    // 실시간 음성 인식 중지
+    if (recognition) {
+        try {
+            recognition.stop();
+        } catch (e) { }
+    }
+    // 실시간 인식 결과가 있으면 바로 표시
+    if (liveTranscript) {
+        addMessage(liveTranscript, 'user');
     }
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
