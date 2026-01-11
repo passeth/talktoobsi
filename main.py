@@ -35,13 +35,14 @@ def save_history(history):
         json.dump(history[-20:], f)  # 20개로 확장
 
 def get_tts_text(response_text: str) -> str:
-    """응답 분석해서 TTS 내용 결정"""
-    if "저장" in response_text or "생성" in response_text or "작성" in response_text or "추가" in response_text:
-        return "노트를 저장했습니다. 노트 탭에서 확인해보세요."
-    elif len(response_text) > 500:
-        return response_text[:300] + "... 자세한 내용은 노트를 확인하세요."
-    else:
-        return response_text
+    """응답에서 [브리프] 부분만 추출하여 TTS로 읽음"""
+    import re
+    # [브리프] 형식 찾기
+    match = re.search(r'\[([^\]]+)\]', response_text)
+    if match:
+        return match.group(1)  # [ ] 안의 내용만 반환
+    # 없으면 첫 50자
+    return response_text[:50].replace('\n', ' ')
 
 @app.get("/")
 async def root():
@@ -63,25 +64,29 @@ async def chat(message: str, tts: bool = False):
 [중요 규칙]
 1. 노트 생성/수정 요청 시 반드시 실제 파일을 생성하거나 수정하세요
 2. 텍스트로만 응답하지 말고, 실제 파일 작업을 수행하세요
-3. 작업 완료 후 간단히 뭘 했는지 알려주세요
+3. 질문하지 말고 합리적으로 판단해서 진행하세요
 
 [파일 경로 규칙]
 - Daily Notes: 001_Growth Calendar/2026/YYYY-MM-DD.md
 - 프로젝트: Projects/프로젝트명/파일명.md
 - 인박스: 001_Growth Calendar/Inbox.md
 
-[YAML frontmatter 규칙]
-노트 생성 시:
----
-title: "제목"
-date: 2026-01-11
-tags: [태그1, 태그2]
----
+[응답 형식 - 매우 중요!]
+모든 응답은 아래 형식을 따르세요:
+[음성으로 읽을 간단한 요약 - 1-2문장]
+실제 응답 내용...
 
-[응답 패턴]
-- 노트 생성: "네, [파일명]에 기록했습니다" (실제 파일 작업 후)
-- 검색: 검색 결과 요약
-- 질문: 간단히 답변
+예시:
+[오늘 데일리 노트에 회의 내용을 기록했습니다]
+2026-01-11.md 파일에 회의 내용을 추가했습니다. 추가된 내용은...
+
+[내일 일정은 3개 있습니다]
+1. 오전 10시 - 팀 미팅
+2. 오후 2시 - 클라이언트 콜
+3. 오후 5시 - 보고서 마감
+
+[오늘 날씨는 맑고 추울 예정입니다]
+서울 기준 오늘 최고기온 -3도...
 """
     
     if context:
@@ -145,25 +150,25 @@ async def voice(audio: UploadFile = File(...), tts: bool = True):
 [중요 규칙]
 1. 노트 생성/수정 요청 시 반드시 실제 파일을 생성하거나 수정하세요
 2. 텍스트로만 응답하지 말고, 실제 파일 작업을 수행하세요
-3. 작업 완료 후 간단히 뭘 했는지 알려주세요
+3. 질문하지 말고 합리적으로 판단해서 진행하세요
 
 [파일 경로 규칙]
 - Daily Notes: 001_Growth Calendar/2026/YYYY-MM-DD.md
 - 프로젝트: Projects/프로젝트명/파일명.md
 - 인박스: 001_Growth Calendar/Inbox.md
 
-[YAML frontmatter 규칙]
-노트 생성 시:
----
-title: "제목"
-date: 2026-01-11
-tags: [태그1, 태그2]
----
+[응답 형식 - 매우 중요!]
+모든 응답은 아래 형식을 따르세요:
+[음성으로 읽을 간단한 요약 - 1-2문장]
+실제 응답 내용...
 
-[응답 패턴]
-- 노트 생성: "네, [파일명]에 기록했습니다" (실제 파일 작업 후)
-- 검색: 검색 결과 요약
-- 질문: 간단히 답변
+예시:
+[오늘 데일리 노트에 회의 내용을 기록했습니다]
+2026-01-11.md 파일에 회의 내용을 추가했습니다.
+
+[내일 일정은 3개 있습니다]
+1. 오전 10시 - 팀 미팅
+2. 오후 2시 - 클라이언트 콜
 """
     
     if context:
