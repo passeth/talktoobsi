@@ -6,6 +6,22 @@ iPhone이나 Mac에서 **말로** Obsidian 노트를 검색하고, 생성하고,
 
 ![Platform](https://img.shields.io/badge/Platform-macOS-blue) ![Python](https://img.shields.io/badge/Python-3.10+-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+## 📋 변경 로그
+
+### v1.1.0 (2026-01-11)
+- ✨ **TTS 모드 토글** - 짧게/전체/직접 모드 선택
+- ✨ **실시간 음성 인식** - 말하는 동안 텍스트 표시
+- ✨ **진행 상태 애니메이션** - Claude 응답 대기 중 표시
+- ✨ **Google Cloud TTS** - 더 빠르고 자연스러운 한국어 음성
+- ✨ **재생/중지 토글** - 오디오 재생 제어
+- 🔧 5분 타임아웃 설정
+- 🔧 대화 히스토리 20개로 확장
+
+### v1.0.0
+- 초기 릴리스
+
+---
+
 ## ✨ 이런 게 됩니다!
 
 - 🎤 **"오늘 회의 내용 정리해줘"** → 노트 자동 생성
@@ -28,12 +44,11 @@ iPhone이나 Mac에서 **말로** Obsidian 노트를 검색하고, 생성하고,
 
 ## 📋 필요한 것들
 
-시작하기 전에 이것들이 필요해요:
-
 | 필수 항목 | 설명 |
 |----------|------|
 | 🖥️ **Mac** | 24시간 서버로 사용 (안 쓰는 맥북도 OK!) |
 | 🔑 **OpenAI API Key** | [여기서 발급](https://platform.openai.com/api-keys) |
+| 🔑 **Google Cloud TTS** | [서비스 계정 키](https://console.cloud.google.com/) (선택) |
 | 🤖 **Claude Code** | [여기서 설치](https://claude.ai/code) (Pro 구독 필요) |
 | 📁 **Obsidian Vault** | 이미 있으시죠? |
 | 📱 **iPhone** | 선택사항 (Mac에서만 써도 돼요) |
@@ -143,6 +158,22 @@ https://random-words-here.trycloudflare.com
 
 ## 💬 사용 방법
 
+### UI 구성
+
+```
+[ 🔈 짧게 ] [ 🔊 전체 ] [ ⌨️ 직접 ]  ← TTS 모드 선택
+[텍스트 입력...              ] [📤]  ← 텍스트 입력
+[🎤 녹음    ] [🔊] [🗑️]              ← 음성 녹음/재생
+```
+
+### TTS 모드
+
+| 모드 | 설명 |
+|------|------|
+| 🔈 **짧게** | 응답 요약만 읽어줌 (기본) |
+| 🔊 **전체** | 전체 응답 읽어줌 |
+| ⌨️ **직접** | Claude Code 명령어 직접 입력 |
+
 ### 탭 구성
 
 | 탭 | 기능 |
@@ -157,6 +188,13 @@ https://random-words-here.trycloudflare.com
 - 🗣️ "어제 회의록 찾아줘"
 - 🗣️ "이 내용 노트로 저장해줘"
 - 🗣️ "내 태스크 목록 보여줘"
+
+### 직접 모드 예시 (⌨️)
+
+```
+/agent summarize project
+ultrathink 복잡한 분석 요청...
+```
 
 ---
 
