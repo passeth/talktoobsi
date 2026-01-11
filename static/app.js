@@ -208,7 +208,7 @@ async function sendAudio() {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임아웃
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5분 타임아웃
 
         const response = await fetch(`/voice?tts=true&mode=${currentMode}`, {
             method: 'POST',
@@ -248,7 +248,7 @@ async function sendText(text) {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임아웃
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5분 타임아웃
 
         const response = await fetch(`/chat?message=${encodeURIComponent(text)}&tts=true&mode=${currentMode}`, {
             method: 'POST',
