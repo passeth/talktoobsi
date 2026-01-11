@@ -199,16 +199,35 @@ async function sendAudio() {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
 
+    // 진행 상태 애니메이션
+    let dots = 0;
+    const progressInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        status.textContent = `🤖 Claude 생각 중${'·'.repeat(dots)}`;
+    }, 500);
+
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임아웃
+
         const response = await fetch(`/voice?tts=true&mode=${currentMode}`, {
             method: 'POST',
-            body: formData
+            body: formData,
+            signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+        clearInterval(progressInterval);
         await handleResponse(response);
     } catch (err) {
-        console.error('연결 오류:', err);
-        status.textContent = '서버 연결 실패';
+        clearInterval(progressInterval);
+        if (err.name === 'AbortError') {
+            status.textContent = '⏱️ 시간 초과';
+            addMessage('⚠️ 응답 시간이 초과되었습니다. 다시 시도해주세요.', 'ai');
+        } else {
+            console.error('연결 오류:', err);
+            status.textContent = '서버 연결 실패';
+        }
     }
 }
 
@@ -218,18 +237,36 @@ async function sendText(text) {
 
     lastTranscript = text;
     addMessage(text, 'user');
-    status.textContent = '처리 중...';
     textInput.value = '';
 
+    // 진행 상태 애니메이션
+    let dots = 0;
+    const progressInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        status.textContent = `🤖 Claude 생각 중${'·'.repeat(dots)}`;
+    }, 500);
+
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임아웃
+
         const response = await fetch(`/chat?message=${encodeURIComponent(text)}&tts=true&mode=${currentMode}`, {
-            method: 'POST'
+            method: 'POST',
+            signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+        clearInterval(progressInterval);
         await handleResponse(response);
     } catch (err) {
-        console.error('연결 오류:', err);
-        status.textContent = '서버 연결 실패';
+        clearInterval(progressInterval);
+        if (err.name === 'AbortError') {
+            status.textContent = '⏱️ 시간 초과';
+            addMessage('⚠️ 응답 시간이 초과되었습니다. 다시 시도해주세요.', 'ai');
+        } else {
+            console.error('연결 오류:', err);
+            status.textContent = '서버 연결 실패';
+        }
     }
 }
 
