@@ -32,7 +32,7 @@ def load_history():
 
 def save_history(history):
     with open(HISTORY_FILE, "w") as f:
-        json.dump(history[-10:], f)
+        json.dump(history[-20:], f)  # 20개로 확장
 
 def get_tts_text(response_text: str) -> str:
     """응답 분석해서 TTS 내용 결정"""
@@ -98,19 +98,24 @@ tags: [태그1, 태그2]
     )
     
     response_text = result.stdout.strip()
-    history.append({"user": message, "assistant": response_text[:500]})
+    history.append({"user": message, "assistant": response_text[:1000]})  # 더 많이 저장
     save_history(history)
     
     if tts and response_text:
         tts_text = get_tts_text(response_text)
         audio_path = await generate_tts(tts_text)
-        # 응답 텍스트 미리보기를 헤더에 추가 (URL 인코딩)
-        preview = quote(response_text[:50].replace('\n', ' '))
-        return FileResponse(
-            audio_path, 
-            media_type="audio/mpeg",
-            headers={"X-Response-Preview": preview}
-        )
+        
+        # 오디오를 base64로 인코딩
+        import base64
+        with open(audio_path, "rb") as f:
+            audio_base64 = base64.b64encode(f.read()).decode()
+        
+        # 전체 응답 텍스트와 오디오를 함께 반환
+        return {
+            "response": response_text,
+            "audio": audio_base64,
+            "tts_text": tts_text
+        }
     
     return {"response": response_text}
 
@@ -175,20 +180,25 @@ tags: [태그1, 태그2]
     )
     
     response_text = result.stdout.strip()
-    history.append({"user": user_message, "assistant": response_text[:500]})
+    history.append({"user": user_message, "assistant": response_text[:1000]})  # 더 많이 저장
     save_history(history)
     
     if tts and response_text:
         tts_text = get_tts_text(response_text)
         audio_response_path = await generate_tts(tts_text)
-        # 응답 텍스트 미리보기를 헤더에 추가 (URL 인코딩)
-        preview = quote(response_text[:50].replace('\n', ' '))
-        user_msg = quote(user_message[:30])
-        return FileResponse(
-            audio_response_path, 
-            media_type="audio/mpeg",
-            headers={"X-Response-Preview": preview, "X-User-Message": user_msg}
-        )
+        
+        # 오디오를 base64로 인코딩
+        import base64
+        with open(audio_response_path, "rb") as f:
+            audio_base64 = base64.b64encode(f.read()).decode()
+        
+        # 전체 응답 텍스트와 오디오를 함께 반환
+        return {
+            "transcript": user_message,
+            "response": response_text,
+            "audio": audio_base64,
+            "tts_text": tts_text
+        }
     
     return {"transcript": user_message, "response": response_text}
 

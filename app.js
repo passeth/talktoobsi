@@ -158,36 +158,39 @@ async function sendText(text) {
     }
 }
 
-// 응답 처리 (공통)
+// 응답 처리 (공통) - JSON 응답으로 전체 텍스트와 오디오 수신
 async function handleResponse(response) {
     if (response.ok) {
-        const contentType = response.headers.get('content-type');
+        const data = await response.json();
 
-        if (contentType && contentType.includes('audio')) {
-            // 서버에서 보낸 응답 미리보기 읽기 (URL 디코딩)
-            const responsePreview = decodeURIComponent(response.headers.get('X-Response-Preview') || '%EC%9D%91%EB%8B%B5%20%EC%A4%91...');
-            const userMessage = response.headers.get('X-User-Message');
+        // 음성 인식 결과 표시
+        if (data.transcript) {
+            addMessage(data.transcript, 'user');
+        }
 
-            const audioBlob = await response.blob();
-            lastAudioUrl = URL.createObjectURL(audioBlob);
-            lastTranscript = responsePreview; // 응답 미리보기 저장
-            audioPlayer.src = lastAudioUrl;
+        // 전체 응답 텍스트 표시 (CLI 스타일)
+        if (data.response) {
+            addMessage(data.response, 'ai');
+            lastTranscript = data.response.substring(0, 50);
+        }
+
+        // 오디오 재생 (base64)
+        if (data.audio) {
+            const audioData = `data:audio/mpeg;base64,${data.audio}`;
+            lastAudioUrl = audioData;
+            audioPlayer.src = audioData;
 
             try {
                 await audioPlayer.play();
                 isPlaying = true;
                 replayBtn.textContent = '⏹️';
-                addMessage(`🔊 ${responsePreview.substring(0, 30)}...`, 'ai');
             } catch (e) {
-                addMessage(`🔇 ${responsePreview.substring(0, 30)}... (재생 버튼 클릭)`, 'ai');
+                console.log('자동 재생 실패, 버튼으로 재생 가능');
             }
 
             replayBtn.disabled = false;
-        } else {
-            const data = await response.json();
-            if (data.transcript) addMessage(data.transcript, 'user');
-            if (data.response) addMessage(data.response, 'ai');
         }
+
         status.textContent = '대기 중';
     } else {
         status.textContent = '서버 오류';
